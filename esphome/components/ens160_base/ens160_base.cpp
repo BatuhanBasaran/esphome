@@ -148,6 +148,7 @@ void ENS160Component::update() {
   uint8_t status_value, data_ready;
 
   static bool initialized = false;
+  ESP_LOGV(TAG, "Initialized: %i", initialized);
 
   if (!initialized) {
     
