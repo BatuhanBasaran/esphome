@@ -153,7 +153,7 @@ void ENS160Component::update() {
   }
 
   // verbose status logging
-  ESP_LOGV(TAG, "Status: ENS160 STATAS lallalal bit    0x%x",
+  ESP_LOGV(TAG, "Status: ENS160 STATAS lallalal biter    0x%x",
            (ENS160_DATA_STATUS_STATAS & (status_value)) == ENS160_DATA_STATUS_STATAS);
   ESP_LOGV(TAG, "Status: ENS160 STATER bit    0x%x",
            (ENS160_DATA_STATUS_STATER & (status_value)) == ENS160_DATA_STATUS_STATER);
