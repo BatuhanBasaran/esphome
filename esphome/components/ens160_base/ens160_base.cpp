@@ -220,9 +220,9 @@ void ENS160Component::update() {
       this->mark_failed();
       return;
     }
-    
+
     // Temperatur in Kelvin*64 umrechnen
-    float T = this->temperature_ ? this->temperature_->state : NAN;
+    float T = 25;
     uint16_t valT = isnan(T) ? 0 : uint16_t((T + 273.15f) * 64);
 
     // LSB zuerst, dann MSB
