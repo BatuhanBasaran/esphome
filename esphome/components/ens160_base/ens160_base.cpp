@@ -239,6 +239,7 @@ void ENS160Component::update() {
     ESP_LOGV(TAG, "OpMode: 0x%02x", op_mode);
     initialized = true;
     ESP_LOGV(TAG, "Initialization complete");
+    return;
   }
 
   ESP_LOGV(TAG, "Initialized: %i", initialized);
