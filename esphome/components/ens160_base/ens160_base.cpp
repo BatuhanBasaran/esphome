@@ -248,12 +248,12 @@ void ENS160Component::update() {
 
   data_ready = (ENS160_DATA_STATUS_NEWDAT & status_value) || 
                (ENS160_DATA_STATUS_NEWGPR & status_value);
-               
+
   this->validity_flag_ = static_cast<ValidityFlag>((ENS160_DATA_STATUS_VALIDITY & status_value) >> 2);
 
   switch (validity_flag_) {
     case NORMAL_OPERATION:
-      if (data_ready != ENS160_DATA_STATUS_NEWDAT) {
+      if (data_ready != ENS160_DATA_STATUS_NEWDAT && data_ready != ENS160_DATA_STATUS_NEWGPR) {
         ESP_LOGD(TAG, "ENS160 readings unavailable - Normal Operation but readings not ready");
         return;
       }
