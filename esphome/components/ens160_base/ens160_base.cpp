@@ -148,10 +148,10 @@ void ENS160Component::update() {
   uint8_t status_value, data_ready;
 
   static bool initialized = false;
-  ESP_LOGV(TAG, "Initialized: %i", initialized);
+  
 
   if (!initialized) {
-    
+    delay(2000);  
     ESP_LOGV(TAG, "Running initialization");
 
     // set mode to reset
@@ -248,6 +248,8 @@ void ENS160Component::update() {
     initialized = true;
     return;
   }
+
+  ESP_LOGV(TAG, "Initialized: %i", initialized);
 
   if (!this->read_byte(ENS160_REG_DATA_STATUS, &status_value)) {
     ESP_LOGW(TAG, "Error reading status register");
