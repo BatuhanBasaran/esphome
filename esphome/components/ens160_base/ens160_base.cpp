@@ -151,7 +151,7 @@ void ENS160Component::update() {
 
   static uint16_t counter = 0;
   
-  if (counter < 500) {
+  if (counter < 8) {
     counter++;
     ESP_LOGV(TAG, "ENS160 update called %i times", counter);
     return;
