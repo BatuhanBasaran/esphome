@@ -221,6 +221,10 @@ void ENS160Component::update() {
       return;
     }
 
+    ESP_LOGV(TAG, "Set temp_in register");
+    this->write_byte(ENS160_REG_TEMP_IN, 0x4A8A);
+
+
     ESP_LOGV(TAG, "ReaD opmode");
     // read opmode and check standard mode is achieved before finishing Setup
     uint8_t op_mode;
@@ -261,14 +265,13 @@ void ENS160Component::update() {
   ESP_LOGV(TAG, "Status: ENS160 NEWGPR bit    0x%x",
            (ENS160_DATA_STATUS_NEWGPR & (status_value)) == ENS160_DATA_STATUS_NEWGPR);
 
-  data_ready = (ENS160_DATA_STATUS_NEWDAT & status_value) || 
-               (ENS160_DATA_STATUS_NEWGPR & status_value);
+  data_ready = (ENS160_DATA_STATUS_NEWDAT & status_value);
 
   this->validity_flag_ = static_cast<ValidityFlag>((ENS160_DATA_STATUS_VALIDITY & status_value) >> 2);
 
   switch (validity_flag_) {
     case NORMAL_OPERATION:
-      if (data_ready != ENS160_DATA_STATUS_NEWDAT && data_ready != ENS160_DATA_STATUS_NEWGPR) {
+      if (data_ready != ENS160_DATA_STATUS_NEWDAT) {
         ESP_LOGD(TAG, "ENS160 readings unavailable - Normal Operation but readings not ready");
         return;
       }
