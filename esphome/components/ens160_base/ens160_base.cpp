@@ -160,16 +160,26 @@ void ENS160Component::update() {
   if (!initialized) {
     ESP_LOGV(TAG, "Running initialization");
 
+    ESP_LOGV(TAG, "Set mode to idle");
+    // set mode to idle
+    if (!this->write_byte(ENS160_REG_OPMODE, ENS160_OPMODE_IDLE)) {
+      this->error_code_ = WRITE_FAILED;
+      this->mark_failed();
+      return;
+    }
+
+    ESP_LOGV(TAG, "Set mode to reset");
     // set mode to reset
     if (!this->write_byte(ENS160_REG_OPMODE, ENS160_OPMODE_RESET)) {
       this->error_code_ = WRITE_FAILED;
       this->mark_failed();
       return;
     }
+
     delay(ENS160_BOOTING);  
 
 
-
+    ESP_LOGV(TAG, "Check status");
     // check status
     uint8_t status_value;
     if (!this->read_byte(ENS160_REG_DATA_STATUS, &status_value)) {
@@ -188,6 +198,7 @@ void ENS160Component::update() {
       return;
     }
 
+    ESP_LOGV(TAG, "Set mode to idle");
     // set mode to idle
     if (!this->write_byte(ENS160_REG_OPMODE, ENS160_OPMODE_IDLE)) {
       this->error_code_ = WRITE_FAILED;
@@ -195,12 +206,14 @@ void ENS160Component::update() {
       return;
     }
 
+    ESP_LOGV(TAG, "Clear command");
     if (!this->write_byte(ENS160_REG_COMMAND, ENS160_COMMAND_CLRGPR)) {
       this->error_code_ = WRITE_FAILED;
       this->mark_failed();
       return;
     }
 
+    ESP_LOGV(TAG, "Set mode to standard");
     // set mode to standard
     if (!this->write_byte(ENS160_REG_OPMODE, ENS160_OPMODE_STD)) {
       this->error_code_ = WRITE_FAILED;
@@ -208,6 +221,7 @@ void ENS160Component::update() {
       return;
     }
 
+    ESP_LOGV(TAG, "ReaD opmode");
     // read opmode and check standard mode is achieved before finishing Setup
     uint8_t op_mode;
     if (!this->read_byte(ENS160_REG_OPMODE, &op_mode)) {
@@ -224,7 +238,7 @@ void ENS160Component::update() {
 
     ESP_LOGV(TAG, "OpMode: 0x%02x", op_mode);
     initialized = true;
-    return;
+    ESP_LOGV(TAG, "Initialization complete");
   }
 
   ESP_LOGV(TAG, "Initialized: %i", initialized);
