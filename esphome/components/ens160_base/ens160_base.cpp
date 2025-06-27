@@ -49,7 +49,15 @@ static const uint8_t ENS160_DATA_STATUS_NEWGPR = 0x01;
 static const uint8_t ENS160_DATA_AQI = 0x07;
 
 void ENS160Component::setup() {
-  ESP_LOGCONFIG(TAG, "Running setup");
+  ESP_LOGV(TAG, "Running setup");
+
+  // set mode to reset
+  if (!this->write_byte(ENS160_REG_OPMODE, ENS160_OPMODE_RESET)) {
+    this->error_code_ = WRITE_FAILED;
+    this->mark_failed();
+    return;
+  }
+  delay(ENS160_BOOTING);  
 
   // check part_id
   uint16_t part_id;
@@ -64,13 +72,6 @@ void ENS160Component::setup() {
     return;
   }
 
-  // set mode to reset
-  if (!this->write_byte(ENS160_REG_OPMODE, ENS160_OPMODE_RESET)) {
-    this->error_code_ = WRITE_FAILED;
-    this->mark_failed();
-    return;
-  }
-  delay(ENS160_BOOTING);
 
   // check status
   uint8_t status_value;
