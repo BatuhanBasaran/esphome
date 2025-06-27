@@ -148,6 +148,10 @@ void ENS160Component::update() {
   uint8_t status_value, data_ready;
 
   static bool initialized = false;
+
+  static uint32_t boot_ms = millis();
+
+  if (millis() - boot_ms < 5000) return;
   
 
   if (!initialized) {
