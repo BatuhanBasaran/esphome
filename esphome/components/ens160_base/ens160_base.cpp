@@ -195,7 +195,11 @@ void ENS160Component::update() {
       return;
     }
 
-
+    if (!this->write_byte(ENS160_REG_COMMAND, ENS160_COMMAND_CLRGPR)) {
+      this->error_code_ = WRITE_FAILED;
+      this->mark_failed();
+      return;
+    }
 
     // set mode to standard
     if (!this->write_byte(ENS160_REG_OPMODE, ENS160_OPMODE_STD)) {
@@ -232,7 +236,7 @@ void ENS160Component::update() {
   }
 
   // verbose status logging
-  ESP_LOGV(TAG, "Status: ENS160 STATAS lallalal biter    0x%x",
+  ESP_LOGV(TAG, "Status: ENS160 STATAS bit    0x%x",
            (ENS160_DATA_STATUS_STATAS & (status_value)) == ENS160_DATA_STATUS_STATAS);
   ESP_LOGV(TAG, "Status: ENS160 STATER bit    0x%x",
            (ENS160_DATA_STATUS_STATER & (status_value)) == ENS160_DATA_STATUS_STATER);
@@ -242,7 +246,9 @@ void ENS160Component::update() {
   ESP_LOGV(TAG, "Status: ENS160 NEWGPR bit    0x%x",
            (ENS160_DATA_STATUS_NEWGPR & (status_value)) == ENS160_DATA_STATUS_NEWGPR);
 
-  data_ready = ENS160_DATA_STATUS_NEWDAT & status_value;
+  data_ready = (ENS160_DATA_STATUS_NEWDAT & status_value) || 
+               (ENS160_DATA_STATUS_NEWGPR & status_value);
+               
   this->validity_flag_ = static_cast<ValidityFlag>((ENS160_DATA_STATUS_VALIDITY & status_value) >> 2);
 
   switch (validity_flag_) {
