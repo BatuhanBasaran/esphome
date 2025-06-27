@@ -149,10 +149,13 @@ void ENS160Component::update() {
 
   static bool initialized = false;
 
-  static uint32_t boot_ms = millis();
-
-  if (millis() - boot_ms < 5000) return;
+  static uint16_t counter = 0;
   
+  if (counter < 500) {
+    counter++;
+    ESP_LOGV(TAG, "ENS160 update called %i times", counter);
+    return;
+  }
 
   if (!initialized) {
     delay(2000);  
