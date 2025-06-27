@@ -151,7 +151,7 @@ void ENS160Component::update() {
 
   if (!initialized) {
     
-    ESP_LOGV("Running initialization");
+    ESP_LOGV(TAG, "Running initialization");
 
     // set mode to reset
     if (!this->write_byte(ENS160_REG_OPMODE, ENS160_OPMODE_RESET)) {
