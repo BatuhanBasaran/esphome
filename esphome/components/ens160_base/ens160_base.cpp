@@ -220,9 +220,16 @@ void ENS160Component::update() {
       this->mark_failed();
       return;
     }
+    
+    // Temperatur in Kelvin*64 umrechnen
+    float T = this->temperature_ ? this->temperature_->state : NAN;
+    uint16_t valT = isnan(T) ? 0 : uint16_t((T + 273.15f) * 64);
 
-    ESP_LOGV(TAG, "Set temp_in register");
-    this->write_byte(ENS160_REG_TEMP_IN, 0x4A8A);
+    // LSB zuerst, dann MSB
+    uint8_t bufT[2] = { uint8_t(valT & 0xFF), uint8_t(valT >> 8) };
+
+    ESP_LOGV(TAG, "Set temp_in register: 0x%04X", valT);
+    this->write_bytes(ENS160_REG_TEMP_IN, bufT, 2);
 
 
     ESP_LOGV(TAG, "ReaD opmode");
