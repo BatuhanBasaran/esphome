@@ -153,12 +153,11 @@ void ENS160Component::update() {
   
   if (counter < 8) {
     counter++;
-    ESP_LOGV(TAG, "ENS160 update called %i times", counter);
+    ESP_LOGV(TAG, "Wait for logger initialization. %i of 8", counter);
     return;
   }
 
   if (!initialized) {
-    delay(2000);  
     ESP_LOGV(TAG, "Running initialization");
 
     // set mode to reset
@@ -169,18 +168,6 @@ void ENS160Component::update() {
     }
     delay(ENS160_BOOTING);  
 
-    // check part_id
-    uint16_t part_id;
-    if (!this->read_bytes(ENS160_REG_PART_ID, reinterpret_cast<uint8_t *>(&part_id), 2)) {
-      this->error_code_ = COMMUNICATION_FAILED;
-      this->mark_failed();
-      return;
-    }
-    if (part_id != ENS160_PART_ID) {
-      this->error_code_ = INVALID_ID;
-      this->mark_failed();
-      return;
-    }
 
 
     // check status
@@ -190,6 +177,9 @@ void ENS160Component::update() {
       this->mark_failed();
       return;
     }
+
+    ESP_LOGV(TAG, "StatusValue: 0x%02x", status_value);
+
     this->validity_flag_ = static_cast<ValidityFlag>((ENS160_DATA_STATUS_VALIDITY & status_value) >> 2);
 
     if (this->validity_flag_ == INVALID_OUTPUT) {
@@ -204,33 +194,8 @@ void ENS160Component::update() {
       this->mark_failed();
       return;
     }
-    // clear command
-    if (!this->write_byte(ENS160_REG_COMMAND, ENS160_COMMAND_NOP)) {
-      this->error_code_ = WRITE_FAILED;
-      this->mark_failed();
-      return;
-    }
-    if (!this->write_byte(ENS160_REG_COMMAND, ENS160_COMMAND_CLRGPR)) {
-      this->error_code_ = WRITE_FAILED;
-      this->mark_failed();
-      return;
-    }
 
-    // read firmware version
-    if (!this->write_byte(ENS160_REG_COMMAND, ENS160_COMMAND_GET_APPVER)) {
-      this->error_code_ = WRITE_FAILED;
-      this->mark_failed();
-      return;
-    }
-    uint8_t version_data[3];
-    if (!this->read_bytes(ENS160_REG_GPR_READ_4, version_data, 3)) {
-      this->error_code_ = READ_FAILED;
-      this->mark_failed();
-      return;
-    }
-    this->firmware_ver_major_ = version_data[0];
-    this->firmware_ver_minor_ = version_data[1];
-    this->firmware_ver_build_ = version_data[2];
+
 
     // set mode to standard
     if (!this->write_byte(ENS160_REG_OPMODE, ENS160_OPMODE_STD)) {
@@ -252,6 +217,8 @@ void ENS160Component::update() {
       this->mark_failed();
       return;
     }
+
+    ESP_LOGV(TAG, "OpMode: 0x%02x", op_mode);
     initialized = true;
     return;
   }
