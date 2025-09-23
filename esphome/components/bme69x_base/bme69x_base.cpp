@@ -714,5 +714,15 @@ uint8_t BME69x_Component::oversampling_to_measurement_cycles_(BME69x_Oversamplin
   }
 }
 
+void BME69x_Component::set_temperature_oversampling(BME69x_Oversampling v) { this->temperature_oversampling_ = v; }
+void BME69x_Component::set_pressure_oversampling(BME69x_Oversampling v) { this->pressure_oversampling_ = v; }
+void BME69x_Component::set_humidity_oversampling(BME69x_Oversampling v) { this->humidity_oversampling_ = v; }
+void BME69x_Component::set_iir_filter(BME69x_IIRFilter f) { this->iir_filter_ = f; }
+void BME69x_Component::set_heater(uint16_t temp, uint16_t dur) {
+  this->heater_temperature_ = temp;
+  this->heater_duration_ = dur;
+}
+float BME69x_Component::get_setup_priority() const { return setup_priority::DATA; }
+
 }  // namespace bme69x_base
 }  // namespace esphome
