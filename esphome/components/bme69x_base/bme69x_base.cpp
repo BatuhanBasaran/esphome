@@ -468,6 +468,7 @@ void BME69x_Component::update() {
 
   if ((current_time - start_time_) > measure_duration_) {
     float temperature, pressure, humidity, gas_resistance;
+
     if (!this->get_sensor_data_(&temperature, &pressure, &humidity, &gas_resistance)) {
       ESP_LOGW(TAG, "Get sensor data failed");
       return;
