@@ -13,8 +13,8 @@ BME69x_I2C_Component = bme69x_ns.class_(
 )
 
 CONFIG_SCHEMA = CONFIG_SCHEMA_BASE.extend(
-    i2c.i2c_device_schema(default_address=0x77)
-).extend({cv.GenerateID(): cv.declare_id(BME69x_I2C_Component)})
+    {cv.GenerateID(): cv.declare_id(BME69x_I2C_Component)}
+)
 
 
 async def to_code(config):
