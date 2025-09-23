@@ -7,9 +7,6 @@
 namespace esphome {
 namespace bme69x_base {
 
-
-                                    
-
 /// Enum listing all IIR Filter options.
 enum BME69x_IIRFilter {
   BME69x_IIR_FILTER_OFF = 0b000,
@@ -32,90 +29,87 @@ enum BME69x_Oversampling {
   BME69x_OVERSAMPLING_16X = 0b101,
 };
 
-struct BME69x_CalibrationData
-{
-    /*! Calibration coefficient for the humidity sensor */
-    int16_t par_h1;
+struct BME69x_CalibrationData {
+  /*! Calibration coefficient for the humidity sensor */
+  int16_t par_h1;
 
-    /*! Calibration coefficient for the humidity sensor */
-    int8_t par_h2;
+  /*! Calibration coefficient for the humidity sensor */
+  int8_t par_h2;
 
-    /*! Calibration coefficient for the humidity sensor */
-    uint8_t par_h3;
+  /*! Calibration coefficient for the humidity sensor */
+  uint8_t par_h3;
 
-    /*! Calibration coefficient for the humidity sensor */
-    int8_t par_h4;
+  /*! Calibration coefficient for the humidity sensor */
+  int8_t par_h4;
 
-    /*! Calibration coefficient for the humidity sensor */
-    int16_t par_h5;
+  /*! Calibration coefficient for the humidity sensor */
+  int16_t par_h5;
 
-    /*! Calibration coefficient for the humidity sensor */
-    uint8_t par_h6;
+  /*! Calibration coefficient for the humidity sensor */
+  uint8_t par_h6;
 
-    /*! Calibration coefficient for the gas sensor */
-    int8_t par_g1;
+  /*! Calibration coefficient for the gas sensor */
+  int8_t par_g1;
 
-    /*! Calibration coefficient for the gas sensor */
-    int16_t par_g2;
+  /*! Calibration coefficient for the gas sensor */
+  int16_t par_g2;
 
-    /*! Calibration coefficient for the gas sensor */
-    int8_t par_g3;
+  /*! Calibration coefficient for the gas sensor */
+  int8_t par_g3;
 
-    /*! Calibration coefficient for the temperature sensor */
-    uint16_t par_t1;
+  /*! Calibration coefficient for the temperature sensor */
+  uint16_t par_t1;
 
-    /*! Calibration coefficient for the temperature sensor */
-    uint16_t par_t2;
+  /*! Calibration coefficient for the temperature sensor */
+  uint16_t par_t2;
 
-    /*! Calibration coefficient for the temperature sensor */
-    int8_t par_t3;
+  /*! Calibration coefficient for the temperature sensor */
+  int8_t par_t3;
 
-    /*! Calibration coefficient for the pressure sensor */
-    int16_t par_p5;
+  /*! Calibration coefficient for the pressure sensor */
+  int16_t par_p5;
 
-    /*! Calibration coefficient for the pressure sensor */
-    int16_t par_p6;
+  /*! Calibration coefficient for the pressure sensor */
+  int16_t par_p6;
 
-    /*! Calibration coefficient for the pressure sensor */
-    int8_t par_p7;
+  /*! Calibration coefficient for the pressure sensor */
+  int8_t par_p7;
 
-    /*! Calibration coefficient for the pressure sensor */
-    int8_t par_p8;
+  /*! Calibration coefficient for the pressure sensor */
+  int8_t par_p8;
 
-    /*! Calibration coefficient for the pressure sensor */
-    uint16_t par_p1;
+  /*! Calibration coefficient for the pressure sensor */
+  uint16_t par_p1;
 
-    /*! Calibration coefficient for the pressure sensor */
-    uint16_t par_p2;
+  /*! Calibration coefficient for the pressure sensor */
+  uint16_t par_p2;
 
-    /*! Calibration coefficient for the pressure sensor */
-    int8_t par_p3;
+  /*! Calibration coefficient for the pressure sensor */
+  int8_t par_p3;
 
-    /*! Calibration coefficient for the pressure sensor */
-    int8_t par_p4;
+  /*! Calibration coefficient for the pressure sensor */
+  int8_t par_p4;
 
-    /*! Calibration coefficient for the pressure sensor */
-    int16_t par_p9;
+  /*! Calibration coefficient for the pressure sensor */
+  int16_t par_p9;
 
-    /*! Calibration coefficient for the pressure sensor */
-    int8_t par_p10;
+  /*! Calibration coefficient for the pressure sensor */
+  int8_t par_p10;
 
-    int8_t par_p11;
+  int8_t par_p11;
 
-    /*! Variable to store the intermediate temperature coefficient */
-    float t_fine;
+  /*! Variable to store the intermediate temperature coefficient */
+  float t_fine;
 
-    /*! Heater resistance range coefficient */
-    uint8_t res_heat_range;
+  /*! Heater resistance range coefficient */
+  uint8_t res_heat_range;
 
-    /*! Heater resistance value coefficient */
-    int8_t res_heat_val;
+  /*! Heater resistance value coefficient */
+  int8_t res_heat_val;
 
-    /*! Gas resistance range switching error coefficient */
-    int8_t range_sw_err;
+  /*! Gas resistance range switching error coefficient */
+  int8_t range_sw_err;
 };
-
-
 
 class BME69x_Component : public PollingComponent, public i2c::I2CDevice {
  public:
@@ -131,7 +125,9 @@ class BME69x_Component : public PollingComponent, public i2c::I2CDevice {
   void set_temperature_sensor(sensor::Sensor *temperature_sensor) { temperature_sensor_ = temperature_sensor; }
   void set_pressure_sensor(sensor::Sensor *pressure_sensor) { pressure_sensor_ = pressure_sensor; }
   void set_humidity_sensor(sensor::Sensor *humidity_sensor) { humidity_sensor_ = humidity_sensor; }
-  void set_gas_resistance_sensor(sensor::Sensor *gas_resistance_sensor) { gas_resistance_sensor_ = gas_resistance_sensor;}
+  void set_gas_resistance_sensor(sensor::Sensor *gas_resistance_sensor) {
+    gas_resistance_sensor_ = gas_resistance_sensor;
+  }
 
   /** Configure the internal gas sensor heater.
    *
@@ -143,15 +139,15 @@ class BME69x_Component : public PollingComponent, public i2c::I2CDevice {
    */
   void set_heater(uint16_t heater_temperature, uint16_t heater_duration);
 
-
   void setup() override;
   void dump_config() override;
   float get_setup_priority() const override;
   void update() override;
 
  protected:
-
-  float ambient_temperature_ = 25.0;
+  bool get_start_time_ = false;
+  uint32_t start_time_ = 0;
+  uint32_t measure_duration_ = 0;
 
   bool init_bme69x_(void);
   bool read_calibration_data_(void);
@@ -161,21 +157,23 @@ class BME69x_Component : public PollingComponent, public i2c::I2CDevice {
   uint8_t calculate_heater_resistance_(uint16_t temperature);
   uint8_t calculate_gas_wait_(uint16_t duration);
 
+  // Calculate how long the sensor will take until we can retrieve data.
+  uint32_t calculate_measure_duration_();
+  // Calculate the temperature in °C using the provided raw ADC value.
+  float calculate_temperature_(uint32_t raw_temperature);
+  // Calculate the pressure in hPa using the provided raw ADC value.
+  float calculate_pressure_(uint32_t raw_pressure, float *comp_temperature);
+  // Calculate the relative humidity in % using the provided raw ADC value.
+  float calc_humidity_(uint16_t raw_humidity, float *comp_temperature);
+  // Calculate the gas resistance in Ω using the provided raw ADC value.
+  float calc_gas_resistance_(uint16_t raw_gas, uint8_t range);
+
+  bool get_sensor_data_(float *temperature, float *pressure, float *humidity, float *gas_resistance);
+
   uint16_t concat_bytes_(uint8_t msb, uint8_t lsb);
   uint8_t set_bits_(uint8_t reg, uint8_t mask, uint8_t pos, uint8_t val);
   uint8_t set_bits_pos0_(uint8_t reg, uint8_t mask, uint8_t val);
-
-
-  /// Calculate the temperature in °C using the provided raw ADC value.
-  float calc_temperature_(uint32_t raw_temperature);
-  /// Calculate the pressure in hPa using the provided raw ADC value.
-  float calc_pressure_(uint32_t raw_pressure);
-  /// Calculate the relative humidity in % using the provided raw ADC value.
-  float calc_humidity_(uint16_t raw_humidity);
-  /// Calculate the gas resistance in Ω using the provided raw ADC value.
-  float calc_gas_resistance_(uint16_t raw_gas, uint8_t range);
-  /// Calculate how long the sensor will take until we can retrieve data.
-  uint32_t calc_meas_duration_();
+  uint8_t oversampling_to_measurement_cycles_(BME69x_Oversampling os);
 
   BME69x_CalibrationData calibration_;
   BME69x_Oversampling temperature_oversampling_{BME69x_OVERSAMPLING_16X};

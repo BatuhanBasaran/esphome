@@ -7,6 +7,7 @@ namespace bme69x_base {
 
 static const char *const TAG = "bme69x.sensor";
 
+static const uint8_t AMBIENT_TEMPERATURE = 25;
 static const uint8_t BME69X_REG_CHIP_ID = 0xD0;
 static const uint8_t BME69X_REG_SOFT_RESET = 0xE0;
 static const uint8_t BME69X_SOFT_RESET_CMD = 0xB6;
@@ -83,17 +84,23 @@ static const uint8_t BME69X_REG_RES_HEAT0 = 0x5A;
 static const uint8_t BME69X_REG_GAS_WAIT0 = 0x64;
 static const uint16_t MAX_TEMPERATURE = 400;
 static const uint8_t BME69X_ENABLE_HEATER = 0x00;
+static const uint8_t BME69X_DISABLE_HEATER = 0x01;
 static const uint8_t BME69X_ENABLE_GAS_MEAS = 0x01;
+static const uint8_t BME69X_DISABLE_GAS_MEAS = 0x00;
 static const uint8_t BME69X_HCTRL_MSK = 0x08;
 static const uint8_t BME69X_HCTRL_POS = 3;
 static const uint8_t BME69X_NBCONV_MSK = 0x0F;
 static const uint8_t BME69X_RUN_GAS_MSK = 0x30;
 static const uint8_t BME69X_RUN_GAS_POS = 5;
-
-
-
-
-
+static const uint8_t BME69X_FORCED_MODE = 1;
+static const uint8_t BME69X_LEN_FIELD = 17;
+static const uint8_t BME69X_REG_FIELD0 = 0x1D;
+static const uint8_t BME69X_NEW_DATA_MSK = 0x80;
+static const uint8_t BME69X_GAS_INDEX_MSK = 0x0F;
+static const uint8_t BME69X_GAS_RANGE_MSK = 0x0F;
+static const uint8_t BME69X_GASM_VALID_MSK = 0x20;
+static const uint8_t BME69X_HEAT_STAB_MSK = 0x10;
+static const uint8_t BME69X_REG_IDAC_HEAT0 = 0x50;
 
 uint16_t BME69x_Component::concat_bytes_(uint8_t msb, uint8_t lsb) {
   return (static_cast<uint16_t>(msb) << 8) | static_cast<uint16_t>(lsb);
@@ -127,34 +134,41 @@ bool BME69x_Component::read_calibration_data_(void) {
   }
 
   // Temperature
-  this->calibration_.par_t1 = static_cast<uint16_t>(concat_bytes_(coeff[BME69X_IDX_DO_C_MSB], coeff[BME69X_IDX_DO_C_LSB]));
-  this->calibration_.par_t2 = static_cast<uint16_t>(concat_bytes_(coeff[BME69X_IDX_DTK1_C_MSB], coeff[BME69X_IDX_DTK1_C_LSB]));
+  this->calibration_.par_t1 =
+      static_cast<uint16_t>(concat_bytes_(coeff[BME69X_IDX_DO_C_MSB], coeff[BME69X_IDX_DO_C_LSB]));
+  this->calibration_.par_t2 =
+      static_cast<uint16_t>(concat_bytes_(coeff[BME69X_IDX_DTK1_C_MSB], coeff[BME69X_IDX_DTK1_C_LSB]));
   this->calibration_.par_t3 = static_cast<int8_t>(coeff[BME69X_IDX_DTK2_C]);
 
   // Pressure
   this->calibration_.par_p5 = static_cast<int16_t>(concat_bytes_(coeff[BME69X_IDX_S_C_MSB], coeff[BME69X_IDX_S_C_LSB]));
-  this->calibration_.par_p6 = static_cast<int16_t>(concat_bytes_(coeff[BME69X_IDX_TK1S_C_MSB], coeff[BME69X_IDX_TK1S_C_LSB]));
+  this->calibration_.par_p6 =
+      static_cast<int16_t>(concat_bytes_(coeff[BME69X_IDX_TK1S_C_MSB], coeff[BME69X_IDX_TK1S_C_LSB]));
   this->calibration_.par_p7 = static_cast<int8_t>(coeff[BME69X_IDX_TK2S_C]);
   this->calibration_.par_p8 = static_cast<int8_t>(coeff[BME69X_IDX_TK3S_C]);
 
   this->calibration_.par_p1 = static_cast<int16_t>(concat_bytes_(coeff[BME69X_IDX_O_C_MSB], coeff[BME69X_IDX_O_C_LSB]));
-  this->calibration_.par_p2 = static_cast<uint16_t>(concat_bytes_(coeff[BME69X_IDX_TK10_C_MSB], coeff[BME69X_IDX_TK10_C_LSB]));
+  this->calibration_.par_p2 =
+      static_cast<uint16_t>(concat_bytes_(coeff[BME69X_IDX_TK10_C_MSB], coeff[BME69X_IDX_TK10_C_LSB]));
   this->calibration_.par_p3 = static_cast<int8_t>(coeff[BME69X_IDX_TK20_C]);
   this->calibration_.par_p4 = static_cast<int8_t>(coeff[BME69X_IDX_TK30_C]);
 
-  this->calibration_.par_p9  = static_cast<int16_t>(concat_bytes_(coeff[BME69X_IDX_NLS_C_MSB], coeff[BME69X_IDX_NLS_C_LSB]));
+  this->calibration_.par_p9 =
+      static_cast<int16_t>(concat_bytes_(coeff[BME69X_IDX_NLS_C_MSB], coeff[BME69X_IDX_NLS_C_LSB]));
   this->calibration_.par_p10 = static_cast<int8_t>(coeff[BME69X_IDX_TKNLS_C]);
   this->calibration_.par_p11 = static_cast<int8_t>(coeff[BME69X_IDX_NLS3_C]);
 
   // Humidity
-  int16_t par_h5 = static_cast<int16_t>((static_cast<int16_t>(coeff[BME69X_IDX_S_H_MSB]) << 4) |
-                                        (coeff[BME69X_IDX_S_H_LSB] >> 4));
-  if (par_h5 > 2047) par_h5 = static_cast<int16_t>(par_h5 - 4096);
+  int16_t par_h5 =
+      static_cast<int16_t>((static_cast<int16_t>(coeff[BME69X_IDX_S_H_MSB]) << 4) | (coeff[BME69X_IDX_S_H_LSB] >> 4));
+  if (par_h5 > 2047)
+    par_h5 = static_cast<int16_t>(par_h5 - 4096);
   this->calibration_.par_h5 = par_h5;
 
-  int16_t par_h1 = static_cast<int16_t>((static_cast<int16_t>(coeff[BME69X_IDX_O_H_MSB]) << 4) |
-                                        (coeff[BME69X_IDX_O_H_LSB] & 0x0F));
-  if (par_h1 > 2047) par_h1 = static_cast<int16_t>(par_h1 - 4096);
+  int16_t par_h1 =
+      static_cast<int16_t>((static_cast<int16_t>(coeff[BME69X_IDX_O_H_MSB]) << 4) | (coeff[BME69X_IDX_O_H_LSB] & 0x0F));
+  if (par_h1 > 2047)
+    par_h1 = static_cast<int16_t>(par_h1 - 4096);
   this->calibration_.par_h1 = par_h1;
 
   this->calibration_.par_h2 = static_cast<int8_t>(coeff[BME69X_IDX_TK10H_C]);
@@ -164,36 +178,37 @@ bool BME69x_Component::read_calibration_data_(void) {
 
   // Gas
   this->calibration_.par_g1 = static_cast<int8_t>(coeff[BME69X_IDX_RO_C]);
-  this->calibration_.par_g2 = static_cast<int16_t>(concat_bytes_(coeff[BME69X_IDX_TKR_C_MSB], coeff[BME69X_IDX_TKR_C_LSB]));
+  this->calibration_.par_g2 =
+      static_cast<int16_t>(concat_bytes_(coeff[BME69X_IDX_TKR_C_MSB], coeff[BME69X_IDX_TKR_C_LSB]));
   this->calibration_.par_g3 = static_cast<int8_t>(coeff[BME69X_IDX_T_AMB_COMP]);
 
   // Other
-  this->calibration_.res_heat_range = static_cast<uint8_t>((coeff[BME69X_IDX_RES_HEAT_RANGE] & BME69X_RHRANGE_MSK) >> 4);
-  this->calibration_.res_heat_val   = static_cast<int8_t>(coeff[BME69X_IDX_RES_HEAT_VAL]);
-  this->calibration_.range_sw_err   = static_cast<int8_t>((coeff[BME69X_IDX_RANGE_SW_ERR] & BME69X_RSERROR_MSK)) / 16;
+  this->calibration_.res_heat_range =
+      static_cast<uint8_t>((coeff[BME69X_IDX_RES_HEAT_RANGE] & BME69X_RHRANGE_MSK) >> 4);
+  this->calibration_.res_heat_val = static_cast<int8_t>(coeff[BME69X_IDX_RES_HEAT_VAL]);
+  this->calibration_.range_sw_err = static_cast<int8_t>((coeff[BME69X_IDX_RANGE_SW_ERR] & BME69X_RSERROR_MSK)) / 16;
 
   return true;
 }
 
 bool BME69x_Component::init_bme69x_(void) {
-
   // Soft reset
-  if(!this->write_byte(BME69X_REG_SOFT_RESET, BME69X_SOFT_RESET_CMD)) {
+  if (!this->write_byte(BME69X_REG_SOFT_RESET, BME69X_SOFT_RESET_CMD)) {
     this->mark_failed("Soft reset failed");
     return false;
   }
 
   // Get chip id
   uint8_t chip_id = 0;
-  if(!this->read_byte(BME69X_REG_CHIP_ID, &chip_id)) {
+  if (!this->read_byte(BME69X_REG_CHIP_ID, &chip_id)) {
     this->mark_failed("Read chip ID failed");
     return false;
   }
   ESP_LOGI(TAG, "Chip ID: 0x%02X", chip_id);
 
   // Read variant id
-  int32_t variant_id = 0;
-  if(!this->read_byte(BME69X_REG_VARIANT_ID, (uint8_t*)&variant_id)) {
+  uint8_t variant_id = 0;
+  if (!this->read_byte(BME69X_REG_VARIANT_ID, &variant_id)) {
     this->mark_failed("Read variant ID failed");
     return false;
   }
@@ -206,21 +221,11 @@ bool BME69x_Component::init_bme69x_(void) {
   }
 
   return true;
- 
 }
 
 bool BME69x_Component::set_sensor_configuration_(void) {
-  
   // Register data starting from BME69X_REG_CTRL_GAS_1(0x71) up to BME69X_REG_CONFIG(0x75)
-  uint8_t reg_array[BME69X_LEN_CONFIG] = { 0x71, 0x72, 0x73, 0x74, 0x75 };
-
-  // Save current mode
-  uint8_t ctrl_meas = 0;
-  if (!this->read_byte(BME69X_REG_CTRL_MEAS, &ctrl_meas)) {
-    this->mark_failed("Read ctrl_meas failed");
-    return false;
-  }
-  const uint8_t prev_mode = ctrl_meas & BME69X_MODE_MSK;  
+  uint8_t reg_array[BME69X_LEN_CONFIG] = {0x71, 0x72, 0x73, 0x74, 0x75};
 
   // Configuraion only in sleep mode
   if (!this->set_operating_mode_(BME69X_SLEEP_MODE)) {
@@ -241,11 +246,11 @@ bool BME69x_Component::set_sensor_configuration_(void) {
 
   // ODR: NONE -> odr20 = 0, odr3 = 1
   const uint8_t odr20 = 0;
-  const uint8_t odr3  = 1;
+  const uint8_t odr3 = 1;
 
   // CONFIG (0x75): Filter and ODR20
   data_array[4] = set_bits_(data_array[4], BME69X_FILTER_MSK, BME69X_FILTER_POS, filt);
-  data_array[4] = set_bits_(data_array[4], BME69X_ODR20_MSK,  BME69X_ODR20_POS,  odr20);
+  data_array[4] = set_bits_(data_array[4], BME69X_ODR20_MSK, BME69X_ODR20_POS, odr20);
 
   // CTRL_MEAS (0x74): OS temp + OS pres
   data_array[3] = set_bits_(data_array[3], BME69X_OST_MSK, BME69X_OST_POS, os_t);
@@ -266,20 +271,10 @@ bool BME69x_Component::set_sensor_configuration_(void) {
     }
   }
 
-  // Restore previous mode if not sleep
-  if (prev_mode != BME69X_SLEEP_MODE) {
-    if (!this->set_operating_mode_(prev_mode)) {
-      this->mark_failed("Restore op mode failed");
-      return false;
-    }
-  }  
-
   return true;
-
 }
 
 bool BME69x_Component::set_heater_configuration_(void) {
-
   // Set to sleep mode
   if (!this->set_operating_mode_(BME69X_SLEEP_MODE)) {
     return false;
@@ -300,9 +295,6 @@ bool BME69x_Component::set_heater_configuration_(void) {
     return false;
   }
 
-  uint8_t heater_ctrl = 0;
-  uint8_t gas_ctrl = 0;
-
   uint8_t ctrl_gas_data[2] = {0};
 
   if (!this->read_bytes(BME69X_REG_CTRL_GAS_0, ctrl_gas_data, 2)) {
@@ -310,59 +302,62 @@ bool BME69x_Component::set_heater_configuration_(void) {
     return false;
   }
 
-  ctrl_gas_data[0] = set_bits_(ctrl_gas_data[0], BME69X_HCTRL_MSK, BME69X_HCTRL_POS, BME69X_ENABLE_HEATER);
-  ctrl_gas_data[1] = set_bits_pos0_(ctrl_gas_data[1], BME69X_NBCONV_MSK, 0);
-  ctrl_gas_data[1] = set_bits_(ctrl_gas_data[1], BME69X_RUN_GAS_MSK, BME69X_RUN_GAS_POS, BME69X_ENABLE_GAS_MEAS);
+  uint8_t heater_enabled = (this->heater_temperature_ > 0 && this->heater_duration_ > 0) ? 1 : 0;
+  uint8_t heater_ctrl = 0;
+  uint8_t gas_ctrl = 0;
 
-  if(!this->write_bytes(BME69X_REG_CTRL_GAS_0, ctrl_gas_data, 2)) {
+  if (heater_enabled) {
+    heater_ctrl = BME69X_ENABLE_HEATER;
+    gas_ctrl = BME69X_ENABLE_GAS_MEAS;
+  } else {
+    heater_ctrl = BME69X_DISABLE_HEATER;
+    gas_ctrl = BME69X_DISABLE_GAS_MEAS;
+  }
+
+  ctrl_gas_data[0] = set_bits_(ctrl_gas_data[0], BME69X_HCTRL_MSK, BME69X_HCTRL_POS, heater_ctrl);
+  ctrl_gas_data[1] = set_bits_pos0_(ctrl_gas_data[1], BME69X_NBCONV_MSK, 0);
+  ctrl_gas_data[1] = set_bits_(ctrl_gas_data[1], BME69X_RUN_GAS_MSK, BME69X_RUN_GAS_POS, gas_ctrl);
+
+  if (!this->write_bytes(BME69X_REG_CTRL_GAS_0, ctrl_gas_data, 2)) {
     this->mark_failed("Write heater ctrl failed");
     return false;
   }
 
   return true;
-
 }
 
 uint8_t BME69x_Component::calculate_heater_resistance_(uint16_t temperature) {
-
-  if (temperature > MAX_TEMPERATURE) 
-  {
-      temperature = MAX_TEMPERATURE;
+  if (temperature > MAX_TEMPERATURE) {
+    temperature = MAX_TEMPERATURE;
   }
 
-  int32_t var1 = (((int32_t)this->ambient_temperature_ * this->calibration_.par_g3) / 1000U) * 256; 
-  int32_t var2 = (this->calibration_.par_g1 + 784) * (((((this->calibration_.par_g2 + 154009UL) * temperature * 5) / 100) + 3276800ULL) / 10);
+  int32_t var1 = (((int32_t) AMBIENT_TEMPERATURE * this->calibration_.par_g3) / 1000U) * 256;
+  int32_t var2 = (this->calibration_.par_g1 + 784) *
+                 (((((this->calibration_.par_g2 + 154009UL) * temperature * 5) / 100) + 3276800ULL) / 10);
   int32_t var3 = var1 + (var2 >> 1);
   int32_t var4 = (var3 / (this->calibration_.res_heat_range + 4));
   int32_t var5 = (131 * this->calibration_.res_heat_val) + 65536UL;
-  int32_t heatr_res_x100 = (int32_t)(((var4 / var5) - 250) * 34);
+  int32_t heatr_res_x100 = (int32_t) (((var4 / var5) - 250) * 34);
 
   return static_cast<uint8_t>((heatr_res_x100 + 50) / 100);
-
 }
 
 uint8_t BME69x_Component::calculate_gas_wait_(uint16_t duration) {
-
   uint8_t factor = 0;
   uint8_t durval;
 
-  if (duration >= 0xfc0)
-  {
-      durval = 0xff; /* Max duration*/
-  }
-  else
-  {
-      while (duration > 0x3F)
-      {
-          duration = duration / 4;
-          factor += 1;
-      }
+  if (duration >= 0xfc0) {
+    durval = 0xff; /* Max duration*/
+  } else {
+    while (duration > 0x3F) {
+      duration = duration / 4;
+      factor += 1;
+    }
 
-      durval = (uint8_t)(duration + (factor * 64));
+    durval = (uint8_t) (duration + (factor * 64));
   }
 
   return durval;
-
 }
 
 bool BME69x_Component::set_operating_mode_(uint8_t target_op_mode) {
@@ -397,9 +392,8 @@ bool BME69x_Component::set_operating_mode_(uint8_t target_op_mode) {
   } while (current_mode != BME69X_SLEEP_MODE);
 
   if (target_op_mode != BME69X_SLEEP_MODE) {
-    tmp_current_mode =
-        static_cast<uint8_t>((tmp_current_mode & static_cast<uint8_t>(~BME69X_MODE_MSK)) |
-                             (target_op_mode & BME69X_MODE_MSK));
+    tmp_current_mode = static_cast<uint8_t>((tmp_current_mode & static_cast<uint8_t>(~BME69X_MODE_MSK)) |
+                                            (target_op_mode & BME69X_MODE_MSK));
     if (!this->write_byte(BME69X_REG_CTRL_MEAS, tmp_current_mode)) {
       this->mark_failed("Set operating mode failed");
       return false;
@@ -411,26 +405,30 @@ bool BME69x_Component::set_operating_mode_(uint8_t target_op_mode) {
 }
 
 void BME69x_Component::setup() {
-
   if (!this->init_bme69x_()) {
+    this->mark_failed("Init failed");
     return;
   }
+
+  ESP_LOGV(TAG, "Sensor initialized");
 
   if (!this->set_sensor_configuration_()) {
+    this->mark_failed("Set sensor configuration failed");
     return;
   }
+
+  ESP_LOGV(TAG, "Sensor configured");
 
   if (!this->set_heater_configuration_()) {
+    this->mark_failed("Set heater configuration failed");
     return;
   }
 
-
-  // We do an initial read to populate the sensor values right away
-  this->update();
+  ESP_LOGV(TAG, "Heater configured");
 }
 
-void BME680Component::dump_config() {
-  ESP_LOGCONFIG(TAG, "BME680:");
+void BME69x_Component::dump_config() {
+  ESP_LOGCONFIG(TAG, "BME69x:");
   LOG_I2C_DEVICE(this);
   if (this->is_failed()) {
     ESP_LOGE(TAG, ESP_LOG_MSG_COMM_FAIL);
@@ -445,6 +443,7 @@ void BME680Component::dump_config() {
   LOG_SENSOR("  ", "Humidity", this->humidity_sensor_);
   ESP_LOGCONFIG(TAG, "    Oversampling: %s", oversampling_to_str(this->humidity_oversampling_));
   LOG_SENSOR("  ", "Gas Resistance", this->gas_resistance_sensor_);
+
   if (this->heater_duration_ == 0 || this->heater_temperature_ == 0) {
     ESP_LOGCONFIG(TAG, "  Heater OFF");
   } else {
@@ -452,282 +451,269 @@ void BME680Component::dump_config() {
   }
 }
 
-float BME680Component::get_setup_priority() const { return setup_priority::DATA; }
-
-void BME680Component::update() {
-  uint8_t meas_control = 0;  // No need to fetch, we're setting all fields
-  meas_control |= (this->temperature_oversampling_ & 0b111) << 5;
-  meas_control |= (this->pressure_oversampling_ & 0b111) << 2;
-  meas_control |= 0b01;  // forced mode
-  if (!this->write_byte(BME680_REGISTER_CONTROL_MEAS, meas_control)) {
-    this->status_set_warning();
+void BME69x_Component::update() {
+  // Set to forced mode
+  if (!this->set_operating_mode_(BME69X_FORCED_MODE)) {
+    this->mark_failed("Set forced mode failed");
     return;
   }
 
-  this->set_timeout("data", this->calc_meas_duration_(), [this]() { this->read_data_(); });
-}
+  uint32_t current_time = micros();
 
-uint8_t BME680Component::calc_heater_resistance_(uint16_t temperature) {
-  if (temperature < 200)
-    temperature = 200;
-  if (temperature > 400)
-    temperature = 400;
+  if (!get_start_time_) {
+    get_start_time_ = true;
+    start_time_ = micros();
+    measure_duration_ = this->calculate_measure_duration_();
+  }
 
-  const int8_t ambient_temperature = this->calibration_.ambient_temperature;
-  const int8_t gh1 = this->calibration_.gh1;
-  const int16_t gh2 = this->calibration_.gh2;
-  const int8_t gh3 = this->calibration_.gh3;
-  const uint8_t res_heat_range = this->calibration_.res_heat_range;
-  const int8_t res_heat_val = this->calibration_.res_heat_val;
-
-  uint8_t heatr_res;
-  int32_t var1;
-  int32_t var2;
-  int32_t var3;
-  int32_t var4;
-  int32_t var5;
-  int32_t heatr_res_x100;
-
-  var1 = (((int32_t) ambient_temperature * gh3) / 1000) * 256;
-  var2 = (gh1 + 784) * (((((gh2 + 154009) * temperature * 5) / 100) + 3276800) / 10);
-  var3 = var1 + (var2 / 2);
-  var4 = (var3 / (res_heat_range + 4));
-  var5 = (131 * res_heat_val) + 65536;
-  heatr_res_x100 = (int32_t) (((var4 / var5) - 250) * 34);
-  heatr_res = (uint8_t) ((heatr_res_x100 + 50) / 100);
-
-  return heatr_res;
-}
-uint8_t BME680Component::calc_heater_duration_(uint16_t duration) {
-  uint8_t factor = 0;
-  uint8_t duration_value;
-
-  if (duration >= 0xfc0) {
-    duration_value = 0xff;
-  } else {
-    while (duration > 0x3F) {
-      duration /= 4;
-      factor += 1;
+  if ((current_time - start_time_) > measure_duration_) {
+    float temperature, pressure, humidity, gas_resistance;
+    if (!this->get_sensor_data_(&temperature, &pressure, &humidity, &gas_resistance)) {
+      ESP_LOGW(TAG, "Get sensor data failed");
+      return;
     }
-    duration_value = duration + (factor * 64);
-  }
 
-  return duration_value;
-}
-void BME680Component::read_data_() {
-  uint8_t data[15];
-  if (!this->read_bytes(BME680_REGISTER_FIELD0, data, 15)) {
-    if (this->temperature_sensor_ != nullptr)
-      this->temperature_sensor_->publish_state(NAN);
-    if (this->pressure_sensor_ != nullptr)
-      this->pressure_sensor_->publish_state(NAN);
-    if (this->humidity_sensor_ != nullptr)
-      this->humidity_sensor_->publish_state(NAN);
-    if (this->gas_resistance_sensor_ != nullptr)
-      this->gas_resistance_sensor_->publish_state(NAN);
-    ESP_LOGW(TAG, ESP_LOG_MSG_COMM_FAIL);
-    this->status_set_warning();
-    return;
-  }
-  this->status_clear_warning();
-
-  uint32_t raw_temperature = (uint32_t(data[5]) << 12) | (uint32_t(data[6]) << 4) | (uint32_t(data[7]) >> 4);
-  uint32_t raw_pressure = (uint32_t(data[2]) << 12) | (uint32_t(data[3]) << 4) | (uint32_t(data[4]) >> 4);
-  uint32_t raw_humidity = (uint32_t(data[8]) << 8) | uint32_t(data[9]);
-  uint16_t raw_gas = (uint16_t) ((uint32_t) data[13] * 4 | (((uint32_t) data[14]) / 64));
-  uint8_t gas_range = data[14] & 0x0F;
-
-  float temperature = this->calc_temperature_(raw_temperature);
-  float pressure = this->calc_pressure_(raw_pressure);
-  float humidity = this->calc_humidity_(raw_humidity);
-  float gas_resistance = this->calc_gas_resistance_(raw_gas, gas_range);
-
-  bool gas_valid = (data[14] >> 5) & 1;
-  bool heat_stable = (data[14] >> 4) & 1;
-  if (this->heater_temperature_ == 0 || this->heater_duration_ == 0)
-    heat_stable = true;  // Allow reporting gas resistance when heater is disabled
-
-  ESP_LOGD(TAG, "Got temperature=%.1f°C pressure=%.1fhPa humidity=%.1f%% gas_resistance=%.1fΩ", temperature, pressure,
-           humidity, gas_resistance);
-  if (!gas_valid)
-    ESP_LOGW(TAG, "Gas measurement unsuccessful, reading invalid!");
-  if (!heat_stable)
-    ESP_LOGW(TAG, "Heater unstable, reading invalid! (Normal for a few readings after a power cycle)");
-
-  if (this->temperature_sensor_ != nullptr)
-    this->temperature_sensor_->publish_state(temperature);
-  if (this->pressure_sensor_ != nullptr)
-    this->pressure_sensor_->publish_state(pressure);
-  if (this->humidity_sensor_ != nullptr)
-    this->humidity_sensor_->publish_state(humidity);
-  if (this->gas_resistance_sensor_ != nullptr) {
-    if (gas_valid && heat_stable) {
+    if (this->temperature_sensor_ != nullptr) {
+      this->temperature_sensor_->publish_state(temperature);
+    }
+    if (this->pressure_sensor_ != nullptr) {
+      this->pressure_sensor_->publish_state(pressure);
+    }
+    if (this->humidity_sensor_ != nullptr) {
+      this->humidity_sensor_->publish_state(humidity);
+    }
+    if (this->gas_resistance_sensor_ != nullptr) {
       this->gas_resistance_sensor_->publish_state(gas_resistance);
-    } else {
-      this->status_set_warning();
-      this->gas_resistance_sensor_->publish_state(NAN);
     }
+
+    get_start_time_ = false;
   }
 }
 
-float BME680Component::calc_temperature_(uint32_t raw_temperature) {
-  float var1 = 0;
-  float var2 = 0;
-  float var3 = 0;
-  float calc_temp = 0;
-  float temp_adc = raw_temperature;
+bool BME69x_Component::get_sensor_data_(float *temperature, float *pressure, float *humidity, float *gas_resistance) {
+  uint8_t buffer[BME69X_LEN_FIELD] = {0};
+  uint8_t tries = 5;
 
-  const float t1 = this->calibration_.t1;
-  const float t2 = this->calibration_.t2;
-  const float t3 = this->calibration_.t3;
+  while (tries--) {
+    if (!this->read_bytes(BME69X_REG_FIELD0, buffer, BME69X_LEN_FIELD)) {
+      this->mark_failed("Read sensor data failed");
+      return false;
+    }
 
-  /* calculate var1 data */
-  var1 = ((temp_adc / 16384.0f) - (t1 / 1024.0f)) * t2;
+    uint8_t status = buffer[0] & BME69X_NEW_DATA_MSK;
+    uint8_t gas_index = buffer[0] & BME69X_GAS_INDEX_MSK;
+    uint8_t gas_range = buffer[16] & BME69X_GAS_RANGE_MSK;
 
-  /* calculate var2 data */
-  var3 = (temp_adc / 131072.0f) - (t1 / 8192.0f);
-  var2 = var3 * var3 * t3 * 16.0f;
+    status |= (buffer[16] & BME69X_GASM_VALID_MSK);
+    status |= (buffer[16] & BME69X_HEAT_STAB_MSK);
 
-  /* t_fine value*/
-  this->calibration_.tfine = (var1 + var2);
+    uint32_t adc_pres = (uint32_t(buffer[2]) << 16) | (uint32_t(buffer[3]) << 8) | uint32_t(buffer[4]);
+    uint32_t adc_temp = (uint32_t(buffer[5]) << 16) | (uint32_t(buffer[6]) << 8) | uint32_t(buffer[7]);
+    uint16_t adc_hum = (uint16_t(buffer[8]) << 8) | uint16_t(buffer[9]);
+    uint16_t adc_gas = (uint16_t(buffer[15]) << 2) | uint16_t(buffer[16] >> 6);
 
-  /* compensated temperature data*/
-  calc_temp = ((this->calibration_.tfine) / 5120.0f);
+    if ((status & BME69X_NEW_DATA_MSK) != 0) {
+      uint8_t heater_res, idac, gas_wait;
 
-  return calc_temp;
-}
-float BME680Component::calc_pressure_(uint32_t raw_pressure) {
-  const float tfine = this->calibration_.tfine;
-  const float p1 = this->calibration_.p1;
-  const float p2 = this->calibration_.p2;
-  const float p3 = this->calibration_.p3;
-  const float p4 = this->calibration_.p4;
-  const float p5 = this->calibration_.p5;
-  const float p6 = this->calibration_.p6;
-  const float p7 = this->calibration_.p7;
-  const float p8 = this->calibration_.p8;
-  const float p9 = this->calibration_.p9;
-  const float p10 = this->calibration_.p10;
+      if (!this->read_byte(BME69X_REG_RES_HEAT0 + gas_index, &heater_res)) {
+        this->mark_failed("Read heater resistance failed");
+        return false;
+      }
+      if (!this->read_byte(BME69X_REG_IDAC_HEAT0 + gas_index, &idac)) {
+        this->mark_failed("Read idac failed");
+        return false;
+      }
+      if (!this->read_byte(BME69X_REG_GAS_WAIT0 + gas_index, &gas_wait)) {
+        this->mark_failed("Read gas wait failed");
+        return false;
+      }
 
-  float var1 = 0;
-  float var2 = 0;
-  float var3 = 0;
-  float var4 = 0;
-  float calc_pres = 0;
+      *temperature = this->calculate_temperature_(adc_temp);
+      *pressure = this->calculate_pressure_(adc_pres, temperature);
+      *humidity = this->calc_humidity_(adc_hum, temperature);
+      *gas_resistance = this->calc_gas_resistance_(adc_gas, gas_range);
+      return true;
+    }
 
-  var1 = (tfine / 2.0f) - 64000.0f;
-  var2 = var1 * var1 * (p6 / 131072.0f);
-  var2 = var2 + var1 * p5 * 2.0f;
-  var2 = (var2 / 4.0f) + (p4 * 65536.0f);
-  var1 = (((p3 * var1 * var1) / 16384.0f) + (p2 * var1)) / 524288.0f;
-  var1 = (1.0f + (var1 / 32768.0f)) * p1;
-  calc_pres = 1048576.0f - float(raw_pressure);
-
-  /* Avoid exception caused by division by zero */
-  if (int(var1) != 0) {
-    calc_pres = ((calc_pres - (var2 / 4096.0f)) * 6250.0f) / var1;
-    var1 = (p9 * calc_pres * calc_pres) / 2147483648.0f;
-    var2 = calc_pres * (p8 / 32768.0f);
-    var4 = calc_pres / 256.0f;
-    var3 = var4 * var4 * var4 * (p10 / 131072.0f);
-    calc_pres = calc_pres + (var1 + var2 + var3 + (p7 * 128.0f)) / 16.0f;
-  } else {
-    calc_pres = 0;
+    delayMicroseconds(BME69X_PERIOD_POLL);
   }
 
-  return calc_pres / 100.0f;
+  return false;
 }
 
-float BME680Component::calc_humidity_(uint16_t raw_humidity) {
-  const float tfine = this->calibration_.tfine;
-  const float h1 = this->calibration_.h1;
-  const float h2 = this->calibration_.h2;
-  const float h3 = this->calibration_.h3;
-  const float h4 = this->calibration_.h4;
-  const float h5 = this->calibration_.h5;
-  const float h6 = this->calibration_.h6;
-  const float h7 = this->calibration_.h7;
+float BME69x_Component::calc_gas_resistance_(uint16_t raw_gas, uint8_t range) {
+  const uint32_t var1 = static_cast<uint32_t>(262144U) >> range;
+  int32_t var2 = static_cast<int32_t>(raw_gas) - 512;
 
-  float calc_hum = 0;
-  float var1 = 0;
-  float var2 = 0;
-  float var3 = 0;
-  float var4 = 0;
-  float temp_comp;
+  var2 *= 3;
+  var2 += 4096;
 
-  /* compensated temperature data*/
-  temp_comp = tfine / 5120.0f;
+  return 1000000.0f * static_cast<float>(var1) / static_cast<float>(var2);
+}
 
-  var1 = float(raw_humidity) - (h1 * 16.0f + ((h3 / 2.0f) * temp_comp));
-  var2 = var1 *
-         (((h2 / 262144.0f) * (1.0f + ((h4 / 16384.0f) * temp_comp) + ((h5 / 1048576.0f) * temp_comp * temp_comp))));
-  var3 = h6 / 16384.0f;
-  var4 = h7 / 2097152.0f;
+float BME69x_Component::calc_humidity_(uint16_t raw_humidity, float *comp_temperature) {
+  if (!comp_temperature)
+    return NAN;
 
-  calc_hum = var2 + (var3 + var4 * temp_comp) * var2 * var2;
+  const auto &c = this->calibration_;
+  const double T = static_cast<double>(*comp_temperature);
+  const double temp_comp = (T * 5120.0) - 76800.0;
 
-  if (calc_hum > 100.0f) {
-    calc_hum = 100.0f;
-  } else if (calc_hum < 0.0f) {
-    calc_hum = 0.0f;
+  const double oh = static_cast<double>(c.par_h1) * static_cast<double>(1ULL << 6);
+  const double sh = static_cast<double>(c.par_h5) / static_cast<double>(1ULL << 16);
+  const double tk10h = static_cast<double>(c.par_h2) / static_cast<double>(1ULL << 14);
+  const double tk1sh = static_cast<double>(c.par_h4) / static_cast<double>(1ULL << 26);
+  const double tk2sh = static_cast<double>(c.par_h3) / static_cast<double>(1ULL << 26);
+  const double hlin2 = static_cast<double>(c.par_h6) / static_cast<double>(1ULL << 19);
+
+  const double adc = static_cast<double>(raw_humidity);
+
+  const double hoff = adc - (oh + tk10h * temp_comp);
+  const double hsens = hoff * sh * (1.0 + (tk1sh * temp_comp) + (tk1sh * tk2sh * temp_comp * temp_comp));
+  double hum = hsens * (1.0 - hlin2 * hsens);
+
+  const int32_t hum_int = static_cast<int32_t>(hum * 1000.0);
+  if (hum_int >= 100000)
+    hum = 100.0;
+  else if (hum_int < 0)
+    hum = 0.0;
+
+  return static_cast<float>(hum);
+}
+
+float BME69x_Component::calculate_pressure_(uint32_t raw_pressure, float *comp_temperature) {
+  if (comp_temperature == nullptr)
+    return NAN;
+
+  const auto &c = this->calibration_;
+
+  const uint32_t o = static_cast<uint32_t>(c.par_p1) * static_cast<uint32_t>(1ULL << 3);
+  const double tk10 = static_cast<double>(c.par_p2) / static_cast<double>(1ULL << 6);
+  const double tk20 = static_cast<double>(c.par_p3) / static_cast<double>(1ULL << 8);
+  const double tk30 = static_cast<double>(c.par_p4) / static_cast<double>(1ULL << 15);
+
+  const double s = (static_cast<double>(c.par_p5) - static_cast<double>(1ULL << 14)) / static_cast<double>(1ULL << 20);
+  const double tk1s =
+      (static_cast<double>(c.par_p6) - static_cast<double>(1ULL << 14)) / static_cast<double>(1ULL << 29);
+  const double tk2s = static_cast<double>(c.par_p7) / static_cast<double>(1ULL << 32);
+  const double tk3s = static_cast<double>(c.par_p8) / static_cast<double>(1ULL << 37);
+
+  const double nls = static_cast<double>(c.par_p9) / static_cast<double>(1ULL << 48);
+  const double tknls = static_cast<double>(c.par_p10) / static_cast<double>(1ULL << 48);
+
+  /*
+   * NLS3 = par_p11 / 2^65
+   * 2^65 is exceeding the width of 'double' datatype and hence we splitted into two factors since A^(x+y) = A^x * A^y
+   */
+  const double nls3 =
+      static_cast<double>(c.par_p11) / (static_cast<double>(1ULL << 35) * static_cast<double>(1ULL << 30));
+
+  const double T = static_cast<double>(*comp_temperature);
+  const double P = static_cast<double>(raw_pressure);
+
+  const double tmp1 = static_cast<double>(o) + (tk10 * T) + (tk20 * T * T) + (tk30 * T * T * T);
+
+  const double tmp2 = P * (s + (tk1s * T) + (tk2s * T * T) + (tk3s * T * T * T));
+  const double tmp3 = P * P * (nls + (tknls * T));
+  const double tmp4 = P * P * P * nls3;
+
+  const double calc_pres = tmp1 + tmp2 + tmp3 + tmp4;
+
+  return static_cast<float>(calc_pres);
+}
+
+float BME69x_Component::calculate_temperature_(uint32_t raw_temperature) {
+  const int32_t do1 = static_cast<int32_t>(this->calibration_.par_t1) << 8;
+  const double dtk1 = static_cast<double>(this->calibration_.par_t2) / static_cast<double>(1ULL << 30);
+  const double dtk2 = static_cast<double>(this->calibration_.par_t3) / static_cast<double>(1ULL << 48);
+  const int32_t cf = static_cast<int32_t>(raw_temperature) - do1;
+
+  const double temp1 = static_cast<double>(cf) * dtk1;
+  const double temp2 = static_cast<double>(cf) * static_cast<double>(cf) * dtk2;
+
+  return static_cast<float>(temp1 + temp2);
+}
+
+uint32_t BME69x_Component::calculate_measure_duration_(void) {
+  uint32_t measure_cycles = oversampling_to_measurement_cycles_(this->temperature_oversampling_) +
+                            oversampling_to_measurement_cycles_(this->pressure_oversampling_) +
+                            oversampling_to_measurement_cycles_(this->humidity_oversampling_);
+
+  // TPH measurement duration
+  uint32_t measure_duration = measure_cycles * 1963;
+
+  // TPH switching duration
+  measure_duration += 477 * 4;
+
+  // Gas measurement duration
+  measure_duration += 477 * 5;
+
+  // Add 1ms margin
+  measure_duration += 1000;
+
+  return measure_duration;
+}
+
+uint8_t BME69x_Component::oversampling_to_measurement_cycles_(BME69x_Oversampling oversampling) {
+  switch (oversampling) {
+    case BME69x_OVERSAMPLING_NONE:
+      return 0;
+    case BME69x_OVERSAMPLING_1X:
+      return 1;
+    case BME69x_OVERSAMPLING_2X:
+      return 2;
+    case BME69x_OVERSAMPLING_4X:
+      return 4;
+    case BME69x_OVERSAMPLING_8X:
+      return 8;
+    case BME69x_OVERSAMPLING_16X:
+      return 16;
+    default:
+      return 0;
   }
-
-  return calc_hum;
-}
-float BME680Component::calc_gas_resistance_(uint16_t raw_gas, uint8_t range) {
-  float calc_gas_res;
-  float var1 = 0;
-  float var2 = 0;
-  float var3 = 0;
-  float raw_gas_f = raw_gas;
-  float range_f = 1U << range;
-  const float range_sw_err = this->calibration_.range_sw_err;
-
-  var1 = 1340.0f + (5.0f * range_sw_err);
-  var2 = var1 * (1.0f + BME680_GAS_LOOKUP_TABLE_1[range] / 100.0f);
-  var3 = 1.0f + (BME680_GAS_LOOKUP_TABLE_2[range] / 100.0f);
-
-  calc_gas_res = 1.0f / (var3 * 0.000000125f * range_f * (((raw_gas_f - 512.0f) / var2) + 1.0f));
-
-  return calc_gas_res;
-}
-uint32_t BME680Component::calc_meas_duration_() {
-  uint32_t tph_dur;  // Calculate in us
-  uint32_t meas_cycles;
-  const uint8_t os_to_meas_cycles[6] = {0, 1, 2, 4, 8, 16};
-
-  meas_cycles = os_to_meas_cycles[this->temperature_oversampling_];
-  meas_cycles += os_to_meas_cycles[this->pressure_oversampling_];
-  meas_cycles += os_to_meas_cycles[this->humidity_oversampling_];
-
-  /* TPH measurement duration */
-  tph_dur = meas_cycles * 1963u;
-  tph_dur += 477 * 4;  // TPH switching duration
-  tph_dur += 477 * 5;  // Gas measurement duration
-  tph_dur += 500;      // Get it to the closest whole number.
-  tph_dur /= 1000;     // Convert to ms
-
-  tph_dur += 1;  // Wake up duration of 1ms
-
-  /* The remaining time should be used for heating */
-  tph_dur += this->heater_duration_;
-
-  return tph_dur;
-}
-void BME680Component::set_temperature_oversampling(BME680Oversampling temperature_oversampling) {
-  this->temperature_oversampling_ = temperature_oversampling;
-}
-void BME680Component::set_pressure_oversampling(BME680Oversampling pressure_oversampling) {
-  this->pressure_oversampling_ = pressure_oversampling;
-}
-void BME680Component::set_humidity_oversampling(BME680Oversampling humidity_oversampling) {
-  this->humidity_oversampling_ = humidity_oversampling;
-}
-void BME680Component::set_iir_filter(BME680IIRFilter iir_filter) { this->iir_filter_ = iir_filter; }
-void BME680Component::set_heater(uint16_t heater_temperature, uint16_t heater_duration) {
-  this->heater_temperature_ = heater_temperature;
-  this->heater_duration_ = heater_duration;
 }
 
-}  // namespace bme690
+static const char *oversampling_to_str(BME69x_Oversampling oversampling) {
+  switch (oversampling) {
+    case BME69x_OVERSAMPLING_NONE:
+      return "None";
+    case BME69x_OVERSAMPLING_1X:
+      return "1x";
+    case BME69x_OVERSAMPLING_2X:
+      return "2x";
+    case BME69x_OVERSAMPLING_4X:
+      return "4x";
+    case BME69x_OVERSAMPLING_8X:
+      return "8x";
+    case BME69x_OVERSAMPLING_16X:
+      return "16x";
+    default:
+      return "UNKNOWN";
+  }
+}
+
+static const char *iir_filter_to_str(BME69x_IIRFilter filter) {
+  switch (filter) {
+    case BME69x_IIR_FILTER_OFF:
+      return "OFF";
+    case BME69x_IIR_FILTER_1X:
+      return "1x";
+    case BME69x_IIR_FILTER_3X:
+      return "3x";
+    case BME69x_IIR_FILTER_7X:
+      return "7x";
+    case BME69x_IIR_FILTER_15X:
+      return "15x";
+    case BME69x_IIR_FILTER_31X:
+      return "31x";
+    case BME69x_IIR_FILTER_63X:
+      return "63x";
+    case BME69x_IIR_FILTER_127X:
+      return "127x";
+    default:
+      return "UNKNOWN";
+  }
+}
+
+}  // namespace bme69x_base
 }  // namespace esphome

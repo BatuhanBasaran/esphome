@@ -12,16 +12,12 @@ BME69x_I2C_Component = bme69x_ns.class_(
     "BME69x_I2C_Component", cg.PollingComponent, i2c.I2CDevice
 )
 
-CONFIG_SCHEMA = (
-    CONFIG_SCHEMA_BASE
-    .extend(
-        {
-            cv.GenerateID(): cv.declare_id(BME69x_I2C_Component),
-            cv.Optional(i2c.CONF_ADDRESS, default=0x76): cv.one_of(0x76, 0x77, int=True),
-        }
-    )
-    .extend(i2c.i2c_device_schema(default_address=0x76))
-)
+CONFIG_SCHEMA = CONFIG_SCHEMA_BASE.extend(
+    {
+        cv.GenerateID(): cv.declare_id(BME69x_I2C_Component),
+        cv.Optional(i2c.CONF_ADDRESS, default=0x76): cv.one_of(0x76, 0x77, int=True),
+    }
+).extend(i2c.i2c_device_schema(default_address=0x76))
 
 
 async def to_code(config):

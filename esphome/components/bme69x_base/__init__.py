@@ -100,10 +100,18 @@ CONFIG_SCHEMA = (
             cv.Optional(CONF_IIR_FILTER, default="OFF"): cv.enum(
                 IIR_FILTER_OPTIONS, upper=True
             ),
-            cv.Optional(CONF_HEATER, default={CONF_TEMPERATURE: 320, CONF_DURATION: core.TimePeriod(milliseconds=150)}): cv.All(
+            cv.Optional(
+                CONF_HEATER,
+                default={
+                    CONF_TEMPERATURE: 320,
+                    CONF_DURATION: core.TimePeriod(milliseconds=150),
+                },
+            ): cv.All(
                 cv.Schema(
                     {
-                        cv.Optional(CONF_TEMPERATURE, default=320): cv.int_range(min=200, max=400),
+                        cv.Optional(CONF_TEMPERATURE, default=320): cv.int_range(
+                            min=0, max=400
+                        ),
                         cv.Optional(CONF_DURATION, default="150ms"): cv.All(
                             cv.positive_time_period_milliseconds,
                             cv.Range(max=core.TimePeriod(milliseconds=4032)),
