@@ -51,7 +51,7 @@ BME69x_Component = bme69x_ns.class_(
     "BME69x_Component", cg.PollingComponent, i2c.I2CDevice
 )
 
-CONFIG_SCHEMA = (
+CONFIG_SCHEMA_BASE = (
     cv.Schema(
         {
             cv.GenerateID(): cv.declare_id(BME69x_Component),
@@ -127,7 +127,7 @@ CONFIG_SCHEMA = (
 )
 
 
-async def to_code(config):
+async def to_code_base(config):
     var = cg.new_Pvariable(config[CONF_ID])
     await cg.register_component(var, config)
     await i2c.register_i2c_device(var, config)
