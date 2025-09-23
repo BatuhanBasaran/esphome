@@ -57,7 +57,6 @@ static const uint8_t BME69X_RHRANGE_MSK = 0x30;
 static const uint8_t BME69X_IDX_RES_HEAT_VAL = 37;
 static const uint8_t BME69X_IDX_RANGE_SW_ERR = 41;
 static const uint8_t BME69X_RSERROR_MSK = 0xF0;
-static const uint8_t BME69X_LEN_CONFIG = 5;
 static const uint8_t BME69X_REG_CTRL_MEAS = 0x74;
 static const uint8_t BME69X_MODE_MSK = 0x03;
 static const uint8_t BME69X_SLEEP_MODE = 0;
@@ -66,7 +65,6 @@ static const uint8_t BME69X_LEN_CONFIG = 5;
 static const uint8_t BME69X_FILTER_SIZE_127 = 7;
 static const uint8_t BME69X_OS_16X = 5;
 static const uint8_t BME69X_ODR_NONE = 8;
-static const uint8_t BME69X_REG_CTRL_GAS_1 = 0x71;
 static const uint8_t BME69X_FILTER_MSK = 0x1C;
 static const uint8_t BME69X_FILTER_POS = 2;
 static const uint8_t BME69X_ODR20_MSK = 0xE0;
@@ -101,6 +99,48 @@ static const uint8_t BME69X_GAS_RANGE_MSK = 0x0F;
 static const uint8_t BME69X_GASM_VALID_MSK = 0x20;
 static const uint8_t BME69X_HEAT_STAB_MSK = 0x10;
 static const uint8_t BME69X_REG_IDAC_HEAT0 = 0x50;
+
+static const char *oversampling_to_str(BME69x_Oversampling oversampling) {
+  switch (oversampling) {
+    case BME69x_OVERSAMPLING_NONE:
+      return "None";
+    case BME69x_OVERSAMPLING_1X:
+      return "1x";
+    case BME69x_OVERSAMPLING_2X:
+      return "2x";
+    case BME69x_OVERSAMPLING_4X:
+      return "4x";
+    case BME69x_OVERSAMPLING_8X:
+      return "8x";
+    case BME69x_OVERSAMPLING_16X:
+      return "16x";
+    default:
+      return "UNKNOWN";
+  }
+}
+
+static const char *iir_filter_to_str(BME69x_IIRFilter filter) {
+  switch (filter) {
+    case BME69x_IIR_FILTER_OFF:
+      return "OFF";
+    case BME69x_IIR_FILTER_1X:
+      return "1x";
+    case BME69x_IIR_FILTER_3X:
+      return "3x";
+    case BME69x_IIR_FILTER_7X:
+      return "7x";
+    case BME69x_IIR_FILTER_15X:
+      return "15x";
+    case BME69x_IIR_FILTER_31X:
+      return "31x";
+    case BME69x_IIR_FILTER_63X:
+      return "63x";
+    case BME69x_IIR_FILTER_127X:
+      return "127x";
+    default:
+      return "UNKNOWN";
+  }
+}
 
 uint16_t BME69x_Component::concat_bytes_(uint8_t msb, uint8_t lsb) {
   return (static_cast<uint16_t>(msb) << 8) | static_cast<uint16_t>(lsb);
@@ -671,48 +711,6 @@ uint8_t BME69x_Component::oversampling_to_measurement_cycles_(BME69x_Oversamplin
       return 16;
     default:
       return 0;
-  }
-}
-
-static const char *oversampling_to_str(BME69x_Oversampling oversampling) {
-  switch (oversampling) {
-    case BME69x_OVERSAMPLING_NONE:
-      return "None";
-    case BME69x_OVERSAMPLING_1X:
-      return "1x";
-    case BME69x_OVERSAMPLING_2X:
-      return "2x";
-    case BME69x_OVERSAMPLING_4X:
-      return "4x";
-    case BME69x_OVERSAMPLING_8X:
-      return "8x";
-    case BME69x_OVERSAMPLING_16X:
-      return "16x";
-    default:
-      return "UNKNOWN";
-  }
-}
-
-static const char *iir_filter_to_str(BME69x_IIRFilter filter) {
-  switch (filter) {
-    case BME69x_IIR_FILTER_OFF:
-      return "OFF";
-    case BME69x_IIR_FILTER_1X:
-      return "1x";
-    case BME69x_IIR_FILTER_3X:
-      return "3x";
-    case BME69x_IIR_FILTER_7X:
-      return "7x";
-    case BME69x_IIR_FILTER_15X:
-      return "15x";
-    case BME69x_IIR_FILTER_31X:
-      return "31x";
-    case BME69x_IIR_FILTER_63X:
-      return "63x";
-    case BME69x_IIR_FILTER_127X:
-      return "127x";
-    default:
-      return "UNKNOWN";
   }
 }
 

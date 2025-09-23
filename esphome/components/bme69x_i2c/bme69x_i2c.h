@@ -8,7 +8,7 @@ namespace bme69x_i2c {
 
 static const char *const TAG = "bme69x_i2c.sensor";
 
-class BME69x_I2C_Component : public esphome::bme69x_base::BME69x_Component, public i2c::I2CDevice {
+class BME69x_I2C_Component : public esphome::bme69x_base::BME69x_Component {
   bool read_byte(uint8_t a_register, uint8_t *data) override;
   bool write_byte(uint8_t a_register, uint8_t data) override;
   bool write_bytes(uint8_t a_register, const uint8_t *data, uint8_t len) override;
