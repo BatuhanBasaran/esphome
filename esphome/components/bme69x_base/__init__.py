@@ -155,3 +155,5 @@ async def to_code_base(config):
 
     conf = config[CONF_HEATER]
     cg.add(var.set_heater(conf[CONF_TEMPERATURE], conf[CONF_DURATION]))
+
+    return var
